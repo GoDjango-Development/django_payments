@@ -36,6 +36,6 @@ INSTALLED_PLUGINS = {
     about the current template and in response give a custom url kwarg 
 
 In the template use as follows:
-```
-    {% include 'paypal_buttons.html' with total="0.20" auth_token="access_token" context_id="same_that_in_your_settings" %}
-```
+
+{% include 'paypal_buttons.html' with total="0.20" auth_token="access_token" context_id="same_that_in_your_settings" %}
+
