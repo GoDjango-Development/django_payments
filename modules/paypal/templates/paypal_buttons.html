@@ -1,0 +1,115 @@
+
+{% load payments %}
+{% get_payment_settings as settings %}
+{% comment 'LICENCE' %}
+
+Copyright 2022 GoDjango LLC
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+This software was developed by GoDjango Limited Liability Company, the remote scripts used here and underlying tech belongs to 
+PayPal, what is a GoDjango creationg is the easy integration with Django.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+{% endcomment %}
+<div id="paypal-container" ></div>
+<!--
+  In your code, dynamically update data-pp-amount with
+  the price or cart amount. For example,
+  data-pp-amount="89.99" for $89.99 product
+-->
+<div id="paypal-message"
+  data-pp-message
+  data-pp-layout="text"
+  data-pp-text-color="black"
+  data-pp-logo-type="inline"
+  data-pp-amount="{{ total|normalize_amount }}">
+</div>
+
+<!-- Load the Braintree components -->
+<script src="https://js.braintreegateway.com/web/3.85.5/js/client.min.js"></script>
+<script src="https://js.braintreegateway.com/web/3.85.5/js/paypal-checkout.min.js"></script>
+
+
+<script>
+  // Create a client.
+  braintree.client.create({
+      authorization: '{% get_auth_token auth_token %}'
+    }).then(function (clientInstance) {
+      // Create a PayPal Checkout component
+      return braintree.paypalCheckout.create({
+        client: clientInstance
+      });
+    }).then(function (paypalCheckoutInstance) {
+      return paypalCheckoutInstance.loadPayPalSDK({
+        currency: 'USD',
+        intent: 'capture',
+        components: "buttons,messages",
+        "enable-funding": "paylater,venmo",
+        dataAttributes: {
+          amount: document.getElementById("paypal-message").getAttribute("data-pp-amount").replace(",", ".")
+        }
+      })
+    }).then(function (paypalCheckoutInstance) {
+      return paypal.Buttons({
+        //fundingSource: paypal.FUNDING.PAYPAL,
+        createOrder: function () {
+          return paypalCheckoutInstance.createPayment({
+            flow: 'checkout', // Required
+            amount: parseFloat(document.getElementById("paypal-message").getAttribute("data-pp-amount").replace(",", ".")), // Required
+            currency: 'USD', // Required, must match the currency passed in with loadPayPalSDK
+            requestBillingAgreement: true, // Required
+            billingAgreementDetails: {
+              description: "{% get_payment_settings 'agreement' %}"
+            },
+            intent: 'capture', // Must match the intent passed in with loadPayPalSDK
+            enableShippingAddress: true,
+            shippingAddressEditable: true
+          });
+        },
+    
+        onApprove: function (data, actions) {
+          return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+            // Submit `payload.nonce` to your server
+              let headers = {
+                  "X-CSRFToken": '{{csrf_token}}'
+              };
+              fetch("{% on_approve_url context_id %}", {
+                  method: "POST",
+                  body: JSON.stringify(payload),
+                  headers: headers
+              }).then((res, reject)=>{
+                  console.log(res);
+              });
+          });
+        },
+    
+        onCancel: function (data) {
+          console.log('PayPal payment cancelled', JSON.stringify(data, 0, 2));
+        },
+    
+        onError: function (err) {
+          console.error('PayPal error', err);
+        }
+      }
+      ).render('#paypal-container');
+    })
+    .then(function () {
+      // The PayPal button will be rendered in an html element with the ID
+      // `paypal-button`. This function will be called when the PayPal button
+      // is set up and ready to be used
+
+    });
+</script>
