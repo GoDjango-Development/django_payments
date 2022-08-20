@@ -3,7 +3,8 @@ Django Payments is a wrapper around many payment methods for django...
 ## How to use
 Configure your settings as follows:
 
-```py settings.py
+```py 
+#settings.py
 def amount_generator_example(request: HttpRequest, *caller_view_args, **caller_view_kwargs):
     return request.session.get("cart_object", {}).get("total", 0)
 def access_token_generator_example(request: HttpRequest, *caller_view_args, **caller_view_kwargs):
@@ -35,7 +36,9 @@ INSTALLED_PLUGINS = {
     about the current template and in response give a custom url kwarg 
 
 In the template use as follows:
-```py template.html
+```html
+
+template.html
 
 {% include 'paypal_buttons.html' with total="0.2" auth_token="access_token$sandbox$youraccesstoken" context_id="same_that_in_your_settings" %}
 
