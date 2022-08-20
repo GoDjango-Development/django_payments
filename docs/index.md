@@ -37,6 +37,5 @@ INSTALLED_PLUGINS = {
 
 In the template use as follows:
 ```
-{% include 'paypal_buttons.html' with total="0.2" auth_token="access_token$sandbox$youraccesstoken" context_id="same_that_in_your_settings" %}
-
+    {% include 'paypal_buttons.html' with total="0.20" auth_token="access_token" context_id="same_that_in_your_settings" %}
 ```
