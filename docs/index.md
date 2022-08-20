@@ -35,6 +35,4 @@ INSTALLED_PLUGINS = {
     function that accept at least an argument of type django.template.context.Context, this allows user to determine some things
     about the current template and in response give a custom url kwarg 
 
-In the template use as follows:
-
-\{% include 'paypal_buttons.html' with total="0.20" auth_token="access_token" context_id="same_that_in_your_settings" %}
+In the template use as follows you can include django form as using next parameters 'paypal_buttons.html' with total="0.20" auth_token="access_token" context_id="same_that_in_your_settings".
