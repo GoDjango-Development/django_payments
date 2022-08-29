@@ -8,11 +8,18 @@ register = template.Library()
 
 @register.filter()
 def normalize_amount(amount: float):
-  imag = int(amount.imag)
-  if imag > 99: # Thjs shouldnt be
-    raise ValueError("Amount decimal part mustn be higher than 99, actual: %s"%imag)
-  amount = int(amount.real)
-  return "{0}.{1}".format(amount, imag if imag >= 10 else "{}0".format(imag))
+  if hasattr(int, "imag"):
+    imag = int(amount.imag)
+    if imag > 99: # Thjs shouldnt be
+      raise ValueError("Amount decimal part must'nt be higher than 99, actual: %s"%imag)
+    amount = int(amount.real)
+    return "{0}.{1}".format(amount, imag if imag >= 10 else "{}0".format(imag))
+  else:
+    imag = str(amount).replace(",", ".").split(".")
+    if len(imag) > 2:
+      raise ValueError("Amount decimal part must'nt be higher than 99, actual: %s"%imag)
+    amount = "%s.%s"%(imag[0], imag[1] if len(imag[1]) == 2 else imag[1] + "0")
+    return amount
 
 # 'paypal_make_payment'
 @register.simple_tag(takes_context=True)
