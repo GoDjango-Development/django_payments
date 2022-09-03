@@ -6,9 +6,13 @@ from payments.settings import PLUGIN_NAME
 import braintree
 register = template.Library()
 
+class Data:
+  is_loaded = False
+  counter = 0
+
 @register.filter()
 def normalize_amount(amount: float):
-  if hasattr(int, "imag"):
+  if hasattr(amount, "imag"):
     imag = int(amount.imag)
     if imag > 99: # Thjs shouldnt be
       raise ValueError("Amount decimal part must'nt be higher than 99, actual: %s"%imag)
@@ -18,7 +22,10 @@ def normalize_amount(amount: float):
     imag = str(amount).replace(",", ".").split(".")
     if len(imag) > 2:
       raise ValueError("Amount decimal part must'nt be higher than 99, actual: %s"%imag)
-    amount = "%s.%s"%(imag[0], imag[1] if len(imag[1]) == 2 else imag[1] + "0")
+    elif len(imag) == 1:
+      amount = imag[0] + ".00"
+    elif len(imag) == 2:
+      amount = "%s.%s"%(imag[0], imag[1] if len(imag[1]) == 2 else imag[1] + "0")
     return amount
 
 # 'paypal_make_payment'
@@ -44,6 +51,41 @@ def get_auth_token(access_token: str, *args, **kwargs):
   try:
     gateway = braintree.BraintreeGateway(access_token=access_token)
     client_token = gateway.client_token.generate()
-  except:
+  except Exception as ex:
+    print(ex)
     pass
+  # print("real auth_token: ", client_token)
   return client_token
+
+@register.simple_tag()
+def is_being_used():
+    # Data.is_loaded = True
+    return Data.is_loaded
+
+
+@register.simple_tag()
+def get_container_uid():
+  Data.counter += 1
+  Data.is_loaded = True
+  return Data.counter 
+
+@register.simple_tag()
+def add(a, b):
+  return str(a) + str(b)
+
+@register.simple_tag()
+def create_dict(**kwargs):
+  return dict(**kwargs)
+
+@register.simple_tag()
+def set_val(dict_var: dict, *args, **kwargs):
+  #print(dict_var)
+  for index in range(0, len(args), 2):
+    dict_var[args[index]] = args[index + 1]
+  #print(dict_var)
+  dict_var.update(**kwargs)
+  return ""
+
+@register.filter()
+def get(dict_var: dict, key):
+  return dict_var.get(key)
