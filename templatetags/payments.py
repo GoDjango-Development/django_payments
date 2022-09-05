@@ -67,7 +67,7 @@ def is_being_used():
 def get_container_uid():
   Data.counter += 1
   Data.is_loaded = True
-  return Data.counter 
+  return "paypalsdk_%s"%Data.counter 
 
 @register.simple_tag()
 def add(a, b):

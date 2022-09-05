@@ -1,5 +1,4 @@
 {% load payments %}
-{% load debug_tools %}
 
 
 {% if data is None %}
@@ -19,7 +18,7 @@
             components: "buttons,messages",
             "enable-funding": "paylater,venmo",
             dataAttributes: {
-              amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", ".")
+              amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", "."),
             }
           })
         }).then(function (paypalCheckoutInstance) {
@@ -75,7 +74,6 @@
 {% else %}
     <script>
       {% for instance in data.values %}
-        {% pprint "Container Instance" instance %}
         // Create a client.
         braintree.client.create({
             authorization: '{% get_auth_token auth_token %}'
@@ -91,11 +89,13 @@
               components: "buttons,messages",
               "enable-funding": "paylater,venmo",
               dataAttributes: {
-                amount: document.getElementById("{{ instance.message_id }}").getAttribute("data-pp-amount").replace(",", ".")
+                amount: document.getElementById("{{ instance.message_id }}").getAttribute("data-pp-amount").replace(",", "."),
+                namespace: "{{instance.uid}}"
               }
             })
           }).then(function (paypalCheckoutInstance) {
-            return paypal.Buttons({
+
+            return {{instance.uid}}.Buttons({
               //fundingSource: paypal.FUNDING.PAYPAL,
               createOrder: function () {
                 return paypalCheckoutInstance.createPayment({

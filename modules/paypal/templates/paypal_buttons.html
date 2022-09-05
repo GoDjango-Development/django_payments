@@ -1,5 +1,5 @@
 {% load payments %}
-{% load debug_tools %}
+{# {% load debug_tools %} #}
 {% get_payment_settings as settings %}
 {% comment 'LICENSE' %}
 
@@ -49,7 +49,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
   {% add 'paypal-container-' uid as container_id %}
   {% add 'paypal-message-' uid as message_id %}
   {% create_dict as instance_data %}
-  {% set_val instance_data container_id=container_id message_id=message_id %}
+  {% set_val instance_data container_id=container_id message_id=message_id uid=uid %}
   {% set_val data uid instance_data %}
 {% endif %}
 
