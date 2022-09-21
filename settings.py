@@ -18,7 +18,8 @@ INSTALLED_PLUGINS = {
                 "var_identifier": lambda context: {
                     "url_var_for_reverser": "any data you want"
                 }
-            }
+            },
+            "payment_sites": "example.admin.site" 
         }
     }
 }

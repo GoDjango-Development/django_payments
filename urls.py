@@ -1,6 +1,6 @@
-from djjango.urls import path
+from django.urls import path
+from .views import payment_view
 
-
-urlpatterns = (
-    path("payment/", lambda *args:"" , "payment"),
-)
+urlpatterns = [
+    path("pay/", payment_view, name="payments_pay"),
+]

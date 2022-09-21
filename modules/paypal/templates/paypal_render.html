@@ -1,5 +1,5 @@
 {% load payments %}
-
+{% load debug_tools %}
 
 {% if data is None %}
   <script>
@@ -13,44 +13,71 @@
           });
         }).then(function (paypalCheckoutInstance) {
           return paypalCheckoutInstance.loadPayPalSDK({
-            currency: 'USD',
-            intent: 'capture',
-            components: "buttons,messages",
-            "enable-funding": "paylater,venmo",
-            dataAttributes: {
-              amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", "."),
-            }
+            {% if type == "subscribe" %}
+              currency: '{{ currency }}',
+              vault: true,
+              //intent: 'capture',
+              // components: "buttons",
+              //"enable-funding": "paylater,venmo",
+              //dataAttributes: {
+              //  amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", "."),
+              //}
+            {% else %}
+              currency: '{{currency}}',
+              intent: 'capture',
+              components: "buttons,messages",
+              "enable-funding": "paylater,venmo",
+              dataAttributes: {
+                amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", "."),
+              }
+            {% endif %}
           })
         }).then(function (paypalCheckoutInstance) {
           return paypal.Buttons({
-            //fundingSource: paypal.FUNDING.PAYPAL,
-            createOrder: function () {
-              return paypalCheckoutInstance.createPayment({
-                flow: 'checkout', // Required
-                amount: parseFloat(document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", ".")), // Required
-                currency: 'USD', // Required, must match the currency passed in with loadPayPalSDK
-                requestBillingAgreement: true, // Required
-                billingAgreementDetails: {
-                  description: "{% get_payment_settings 'agreement' %}"
-                },
-                intent: 'capture', // Must match the intent passed in with loadPayPalSDK
-                enableShippingAddress: true,
-                shippingAddressEditable: true
-              });
+            style: {
+              "color": "blue"
             },
+            //fundingSource: paypal.FUNDING.PAYPAL,
+            {% if type == "subscribe" %}
+              createBillingAgreement: function () {
+                return paypalCheckoutInstance.createPayment({
+                  flow: 'vault', // Required
+                  // The following are optional params
+                  billingAgreementDescription: "{% get_payment_settings 'agreement' %}",
+                  enableShippingAddress: false,
+                });
+              },
+            {% else %}
+              createOrder: function () {
+                return paypalCheckoutInstance.createPayment({
+                  flow: 'checkout', // Required
+                  amount: parseFloat(document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", ".")), // Required
+                  currency: '{{currency}}',
+                  //currency: 'USD', // Required, must match the currency passed in with loadPayPalSDK
+                  requestBillingAgreement: true, // Required
+                  billingAgreementDetails: {
+                    description: "{% get_payment_settings 'agreement' %}"
+                  },
+                  intent: 'capture', // Must match the intent passed in with loadPayPalSDK
+                  enableShippingAddress: true,
+                  shippingAddressEditable: true
+                });
+              },
+            {% endif %}
             onApprove: function (data, actions) {
               return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+                console.log(payload);
                 // Submit `payload.nonce` to your server
-                  let headers = {
-                      "X-CSRFToken": '{{csrf_token}}'
-                  };
-                  fetch("{% on_approve_url context_id %}", {
-                      method: "POST",
-                      body: JSON.stringify(payload),
-                      headers: headers
-                  }).then((res, reject)=>{
-                      console.log(res);
-                  });
+                let headers = {
+                    "X-CSRFToken": '{{csrf_token}}'
+                };
+                fetch("{% on_approve_url context_id %}", {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                    headers: headers
+                }).then((res, reject)=>{
+                    console.log(res);
+                });
               });
             },
             onCancel: function (data) {
@@ -84,24 +111,48 @@
             });
           }).then(function (paypalCheckoutInstance) {
             return paypalCheckoutInstance.loadPayPalSDK({
-              currency: 'USD',
-              intent: 'capture',
-              components: "buttons,messages",
-              "enable-funding": "paylater,venmo",
-              dataAttributes: {
-                amount: document.getElementById("{{ instance.message_id }}").getAttribute("data-pp-amount").replace(",", "."),
-                namespace: "{{instance.uid}}"
-              }
+              {% if type == "subscribe" %}
+                currency: '{{ currency }}',
+                vault: true,
+                //intent: 'capture',
+                // components: "buttons",
+                //"enable-funding": "paylater,venmo",
+                //dataAttributes: {
+                //  amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", "."),
+                //}
+              {% else %}
+                currency: '{{ currency }}',
+                intent: 'capture',
+                components: "buttons,messages",
+                "enable-funding": "paylater,venmo",
+                dataAttributes: {
+                  amount: document.getElementById("{{ instance.message_id }}").getAttribute("data-pp-amount").replace(",", "."),
+                  namespace: "{{instance.uid}}"
+                }
+              {% endif %}
             })
           }).then(function (paypalCheckoutInstance) {
 
             return {{instance.uid}}.Buttons({
+              style: {
+                "color": "blue"
+              },
               //fundingSource: paypal.FUNDING.PAYPAL,
+              {% if type == "subscribe" %}
+                createBillingAgreement: function () {
+                  return paypalCheckoutInstance.createPayment({
+                    flow: 'vault', // Required
+                    // The following are optional params
+                    billingAgreementDescription: "{% get_payment_settings 'agreement' %}",
+                    enableShippingAddress: false,
+                  });
+                },
+            {% else %}
               createOrder: function () {
                 return paypalCheckoutInstance.createPayment({
                   flow: 'checkout', // Required
                   amount: parseFloat(document.getElementById("{{ instance.message_id }}").getAttribute("data-pp-amount").replace(",", ".")), // Required
-                  currency: 'USD', // Required, must match the currency passed in with loadPayPalSDK
+                  currency: '{{ currency }}', // Required, must match the currency passed in with loadPayPalSDK
                   requestBillingAgreement: true, // Required
                   billingAgreementDetails: {
                     description: "{% get_payment_settings 'agreement' %}"
@@ -111,6 +162,7 @@
                   shippingAddressEditable: true
                 });
               },
+              {% endif %}
               onApprove: function (data, actions) {
                 return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
                   // Submit `payload.nonce` to your server
