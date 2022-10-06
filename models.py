@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils.translation import gettext as _
+
 
 def get_currencies():
     return (
@@ -38,7 +40,7 @@ def get_currencies():
 #        verbose_name_plural = "Payments Methods"
 
 class Currency(models.Model):
-    name = models.CharField("Currency representation", max_length=3, choices=get_currencies(), default="")
+    name = models.CharField(_("Currency representation"), max_length=3, choices=get_currencies(), default="")
     
     @classmethod
     def get_default(cls, ):
@@ -48,5 +50,5 @@ class Currency(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = "Currency"
-        verbose_name_plural = "Currencies"
+        verbose_name = _("Currency")
+        verbose_name_plural = _("Currencies")
