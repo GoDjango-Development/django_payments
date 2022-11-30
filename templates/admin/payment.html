@@ -12,6 +12,7 @@
                 {{description}}
             </p>
             <div class="card-body">
+                {% include 'ethereum_admin.html' %}
                 {% include 'paypal_buttons.html' with total=total auth_token=cfg.auth_token context_id="client" currency=currency %}
             </div>
         </div>

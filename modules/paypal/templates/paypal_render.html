@@ -1,10 +1,10 @@
-{% load payments %}
-{% load debug_tools %}
+{% load payments assets debug_tools %}
 
-{% if data is None %}
-  <script>
+<script async defer nonce="{% generate_nonce 'paypal_render' 'script' %}">
+  
+  {% if data is None %}
       // Create a client.
-      braintree.client.create({
+      window.braintree?.client.create({
           authorization: '{% get_auth_token auth_token %}'
         }).then(function (clientInstance) {
           // Create a PayPal Checkout component
@@ -97,12 +97,10 @@
           // is set up and ready to be used
     
         });
-    </script>
 {% else %}
-    <script>
       {% for instance in data.values %}
         // Create a client.
-        braintree.client.create({
+        window.braintree?.client.create({
             authorization: '{% get_auth_token auth_token %}'
           }).then(function (clientInstance) {
             // Create a PayPal Checkout component
@@ -197,5 +195,5 @@
           });
   
       {% endfor %}
-    </script>
-{% endif %}  
+    {% endif %}  
+</script>

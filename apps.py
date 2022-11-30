@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from .signals import _payment_accepted_stalker
 
 class PaymentConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -10,3 +11,4 @@ class PaymentConfig(AppConfig):
                 Currency.objects.get_or_create(name=currency[0])
         except:
             pass # Ignore it as it must be possible that this is because database is not created yet
+        _payment_accepted_stalker()
