@@ -1,6 +1,6 @@
-{% load payments assets %}
+{% load payments %}
 
-<script async defer nonce="{% generate_nonce 'paypal_render' 'script' %}">
+<script async defer nonce="{% get_nonce %}">
   
   {% if data is None %}
       // Create a client.

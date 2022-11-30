@@ -4,12 +4,22 @@ from django.urls import reverse
 from django.http import Http404
 from django.template.context import Context
 from payments.settings import PLUGIN_NAME
+from functools import lru_cache
 import braintree
 register = template.Library()
 
 class Data:
   is_loaded = False
   counter = 0
+
+@register.simple_tag()
+@lru_cache
+def get_nonce():
+  nonce = ""
+  if "django_optimizer" in settings.INSTALLED_APPS and "CSPMiddleware" in settings.MIDDLEWARE:
+    from django_optimizer.templatetags.assets import generate_nonce
+    nonce = generate_nonce("paypal_render", "script")
+  return nonce
 
 @register.filter()
 def normalize_amount(amount: float):
@@ -52,9 +62,9 @@ def on_approve_url(context: Context, context_id=None, *args, **kwargs):
 @register.simple_tag()
 def get_payment_settings(setting_name=None, *args, **kwargs):
     resp = settings.INSTALLED_PLUGINS.get(PLUGIN_NAME, None)
-    if setting_name:
+    if setting_name and resp:
       resp = resp.get(setting_name)
-    return resp
+    return resp if resp is not None else ""
 
 @register.simple_tag()
 def get_auth_token(access_token: str, *args, **kwargs):
