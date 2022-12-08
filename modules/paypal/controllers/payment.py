@@ -41,6 +41,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
   try:
     result = gateway.transaction.sale({
       "amount": plugin_conf.get("amount", lambda request, *args, **kwargs: 0)(request, *args, **kwargs),
+      # FIXME Also set the currency here as if not this site is vulnerable to fake currency payment
       "payment_method_nonce": payload["nonce"]
     })
   except:
