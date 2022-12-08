@@ -12,3 +12,5 @@ class PaymentConfig(AppConfig):
         except:
             pass # Ignore it as it must be possible that this is because database is not created yet
         _payment_accepted_stalker()
+        #from .settings import get_plugin_conf
+        #print(get_plugin_conf("context", "targets", ["email", "merchant"]))

@@ -1,4 +1,3 @@
-from django import template
 from django.conf import settings
 from django.urls import reverse
 from django.http import Http404
@@ -6,43 +5,30 @@ from django.template.context import Context
 from payments.settings import PLUGIN_NAME
 from functools import lru_cache
 import braintree
+from django import template
 register = template.Library()
+
 
 class Data:
   is_loaded = False
   counter = 0
 
-@register.simple_tag()
-@lru_cache
-def get_nonce():
+@register.simple_tag(takes_context=True)
+def get_nonce(context, nonce_name="paypal_render", nonce_types='script'):
   nonce = ""
-  if "django_optimizer" in settings.INSTALLED_APPS and "CSPMiddleware" in settings.MIDDLEWARE:
+  if "django_optimizer" in settings.INSTALLED_APPS and "django_optimizer.middleware.CSPMiddleware" in settings.MIDDLEWARE:
     from django_optimizer.templatetags.assets import generate_nonce
-    nonce = generate_nonce("paypal_render", "script")
+    nonce = generate_nonce(context, nonce_name, nonce_types)
   return nonce
 
 @register.filter()
 def normalize_amount(amount: float):
-  if hasattr(amount, "imag"):
-    imag = int(amount.imag)
-    if imag > 99: # Thjs shouldnt be
-      raise ValueError("Amount decimal part must'nt be higher than 99, actual: %s"%imag)
-    amount = int(amount.real)
-    return "{0}.{1}".format(amount, imag if imag >= 10 else "{}0".format(imag))
-  else:
-    imag = str(amount).replace(",", ".").split(".")
-    if len(imag) > 2:
-      raise ValueError("Amount decimal part must'nt be higher than 99, actual: %s"%imag)
-    elif len(imag) == 1:
-      amount = imag[0] + ".00"
-    elif len(imag) == 2:
-      amount = "%s.%s"%(imag[0], imag[1] if len(imag[1]) == 2 else imag[1] + "0")
-    return amount
+  return format(amount, ".2f")
 
 # 'paypal_make_payment'
 @register.simple_tag(takes_context=True)
-def on_approve_url(context: Context, context_id=None, *args, **kwargs):
-  payment_type = context.get("type", None)
+def on_approve_url(context: Context, context_id=None, payment_type=None, *args, **kwargs):
+  payment_type = payment_type or context.get("type", None)
   if payment_type is None or payment_type == "default":
     url = reverse("paypal_make_payment", 
       kwargs=settings.INSTALLED_PLUGINS.get(PLUGIN_NAME, {}).get("context", {}).get("urls_kwargs", {}).get(context_id, lambda t: None)(
@@ -51,6 +37,12 @@ def on_approve_url(context: Context, context_id=None, *args, **kwargs):
     )
   elif payment_type == "subscribe":
     url = reverse("paypal_make_subscription", 
+      kwargs=settings.INSTALLED_PLUGINS.get(PLUGIN_NAME, {}).get("context", {}).get("urls_kwargs", {}).get(context_id, lambda t: None)(
+        context
+      )
+    )
+  elif payment_type == "vanilla_default":
+    url = reverse("v_paypal_make_payment", 
       kwargs=settings.INSTALLED_PLUGINS.get(PLUGIN_NAME, {}).get("context", {}).get("urls_kwargs", {}).get(context_id, lambda t: None)(
         context
       )
