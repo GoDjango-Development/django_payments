@@ -1,17 +1,40 @@
 from django.conf import settings
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse, HttpResponseRedirect, HttpResponseNotModified
+from django.db.models import Model
+from django.core.exceptions import ImproperlyConfigured
 from payments.modules.paypal.signals import *
 from payments.settings import PLUGIN_NAME
 from payments.modules.paypal.models.plan import Plan
+from django_plugins import import_string
+from functools import lru_cache
+from asgiref.sync import async_to_sync
 import braintree
 import json
+
+@lru_cache
+def get_configuration():
+  plugin_conf = settings.INSTALLED_PLUGINS.get(PLUGIN_NAME, {})
+  configuration = plugin_conf.get("configuration")
+  if type(configuration) is str:
+    configuration:Model = import_string(configuration)
+    if issubclass(configuration, Model):
+      configuration = braintree.Configuration(
+        braintree.Environment.Sandbox if settings.DEBUG else braintree.Environment.Production,
+        merchant_id=getattr(configuration.objects.first(), "merchant_id", None),
+        public_key=getattr(configuration.objects.first(), "public_key"),
+        private_key=getattr(configuration.objects.first(), "private_key"),
+      )
+    else:
+      raise ImproperlyConfigured("configuration must be either a braintree.Configuration object or a model containing public and private key and optionally merchant id")
+  return configuration
 
 def make_payment(request: HttpRequest, *args, **kwargs):
   payload = json.loads(request.body)
   plugin_conf = settings.INSTALLED_PLUGINS.get(PLUGIN_NAME, {})
+  
   gateway = braintree.BraintreeGateway(
-    config=plugin_conf.get("configuration"),
+    config=get_configuration(),
     access_token=plugin_conf.get("access_token")(request, *args, **kwargs)
   )
   result = None
@@ -43,7 +66,7 @@ def make_subscription(request: HttpRequest, plan_id: str, *args, **kwargs):
   payload = json.loads(request.body)
   plugin_conf = settings.INSTALLED_PLUGINS.get(PLUGIN_NAME, {})
   gateway = braintree.BraintreeGateway(
-    config=plugin_conf.get("configuration"),
+    config=get_configuration(),
     access_token=plugin_conf.get("access_token")(request, *args, **kwargs),
   )
   result = None
@@ -82,7 +105,7 @@ def cancel_subscription(request: HttpRequest, subscription_id: int, *args, **kwa
   payload = json.loads(request.body)
   plugin_conf = settings.INSTALLED_PLUGINS.get(PLUGIN_NAME, {})
   gateway = braintree.BraintreeGateway(
-    config=plugin_conf.get("configuration"),
+    config=get_configuration(),
     access_token=plugin_conf.get("access_token")(request, *args, **kwargs)
   )
   #print(payload)
