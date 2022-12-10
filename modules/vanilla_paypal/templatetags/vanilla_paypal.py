@@ -7,4 +7,7 @@ register = template.Library()
 
 @register.simple_tag(takes_context=True)
 def get_client_token(context):
-  return _get_client_token()
+  try:
+    return _get_client_token()
+  except:
+    return ""
