@@ -60,7 +60,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
       onApprove: function(data, options){
         return options.order.authorize().then(function(authorization){
           var authorization_id = authorization.purchase_units[0].payments.authorizations[0].id;
-          alert("{% trans 'You have authorized this transaction OrderId:'%} " + data.orderID + ", {% trans 'Authorization ID' %}: " + authorization_id + ". {% trans 'Save those data in case some problems occure with the transaction.' %}");
+          alert("{% trans 'You have authorized this transaction OrderId:' %} " + data.orderID + ", {% trans 'Authorization ID' %}: " + authorization_id + ". {% trans 'Save those data in case some problems occure with the transaction.' %}");
           return fetch("{% on_approve_url context_id=context_id payment_type='vanilla_default' %}", {
             method: "post",
             headers: {
@@ -76,7 +76,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
               if(response.redirected) window.location.href = response.url;
             }
           }).catch((error)=>{
-            alert("{% trans 'Something wrong happened and we weren't able to process the payment, please report this to admins' %}");
+            alert("{% trans 'Something wrong happened and we weren\'t able to process the payment, please report this to admins' %}");
           })
         })
       }
