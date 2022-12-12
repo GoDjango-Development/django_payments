@@ -13,6 +13,7 @@ import time
 from django.core.exceptions import ImproperlyConfigured
 import http.client, base64, json
 from payments.settings import get_plugin
+from django_plugins import autoresolve
 
 @lru_cache
 def get_access_token():
@@ -23,8 +24,8 @@ def get_access_token():
     conn = http.client.HTTPSConnection(get_api_url())
     payload = 'grant_type=client_credentials&ignoreCache=true&return_authn_schemes=true&return_client_metadata=true&return_unconsented_scopes=true'
     
-    client_id = get_plugin().get("client_id", None)
-    client_secret = get_plugin().get("client_secret", None)
+    client_id = autoresolve(get_plugin().get("client_id", None))
+    client_secret = autoresolve(get_plugin().get("client_secret", None))
 
     if not (client_id and client_secret):
         raise ImproperlyConfigured("Vanilla PayPal requires both client id and client secret but seems like one of those are missing")

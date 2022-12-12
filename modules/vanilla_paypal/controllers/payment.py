@@ -65,6 +65,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
   data = json.loads(request.body)
   conn = http.client.HTTPSConnection(get_api_url())
   amount = get_plugin().get("amount", lambda request, *args, **kwargs: 0)(request, *args, **kwargs)
+  #print("Great step 1 done")
   if hasattr(amount, "__iter__"): # if its iterable
     amount = amount[0]
     currency = amount[1]
@@ -98,7 +99,8 @@ def make_payment(request: HttpRequest, *args, **kwargs):
   data = json.loads(res.read().decode("utf-8")) # this overrides current data and now when ensuring payment we are ensuring with the real order id associated to the autorization id
   order_id = get_authorization_details(data.get("id")).get("supplementary_data", {}).get("related_ids", {}).get("order_id")
   #print("new order id: ", order_id)
-  wrapper = Wrapper(HttpResponse(status=res.status))
+  wrapper = Wrapper()
+  wrapper.anon_push(HttpResponse(status=res.status))
   signal_named = {
     "order_id": order_id,
     "authorization_id": data.get("authorization_id"),
@@ -121,8 +123,11 @@ def make_payment(request: HttpRequest, *args, **kwargs):
     #print(data)
     if data.get("status", None) == "COMPLETED":
       payment_accepted.send(make_payment, **signal_named)
+      #print("Great success the last step is done")
       return wrapper.reference_stack["anonymous"][0]
   payment_rejected.send(make_payment, **signal_named)
+  #print("Great last step done")
+  #print(wrapper.reference_stack["anonymous"])
   return wrapper.reference_stack["anonymous"][0]
 
 def make_subscription(request: HttpRequest, plan_id: str, *args, **kwargs):
