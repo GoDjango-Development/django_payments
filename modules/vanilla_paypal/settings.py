@@ -15,8 +15,13 @@ import http.client, base64, json
 from payments.settings import get_plugin
 from django_plugins import autoresolve
 
-@lru_cache
 def get_access_token():
+    client_id = autoresolve(get_plugin().get("client_id", None))
+    client_secret = autoresolve(get_plugin().get("client_secret", None))
+    return _get_access_token(client_id, client_secret)
+
+@lru_cache
+def _get_access_token(client_id, client_secret):
     """
         Generates the access token to communicate with the API, the generated Access Token will be then cached and reused without
         doing cache requests... AS settings must'n change during runtime we cache the result of this function...
@@ -24,9 +29,7 @@ def get_access_token():
     conn = http.client.HTTPSConnection(get_api_url())
     payload = 'grant_type=client_credentials&ignoreCache=true&return_authn_schemes=true&return_client_metadata=true&return_unconsented_scopes=true'
     
-    client_id = autoresolve(get_plugin().get("client_id", None))
-    client_secret = autoresolve(get_plugin().get("client_secret", None))
-
+    #print(client_id, client_secret)
     if not (client_id and client_secret):
         raise ImproperlyConfigured("Vanilla PayPal requires both client id and client secret but seems like one of those are missing")
 
@@ -39,6 +42,7 @@ def get_access_token():
     conn.request("POST", "/v1/oauth2/token", payload, headers)
     res = conn.getresponse()
     data = json.loads(res.read().decode("utf-8"))
+    #print(data)
     return data.get("access_token")
 
 def get_client_token():
