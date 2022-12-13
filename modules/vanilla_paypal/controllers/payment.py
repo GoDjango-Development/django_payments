@@ -37,7 +37,7 @@ def ensure_payment_to(order_id, payee_email=None, merchant_id=None, only_once=Fa
     If only_once is set to False (the default) search for only once in a purchase unit
     
   """
-  print("debugging ensurance: ", order_id, payee_email, merchant_id)
+  #print("debugging ensurance: ", order_id, payee_email, merchant_id)
   if not (payee_email or merchant_id): # means False and False 
     return True # as there is nothing to evaluate
   order_details = get_order_detail(order_id)
@@ -47,7 +47,7 @@ def ensure_payment_to(order_id, payee_email=None, merchant_id=None, only_once=Fa
   if not purchase_units:
     return False
 
-  print("purchase units", purchase_units)
+  #print("purchase units", purchase_units)
   for purchase_unit in purchase_units:
     if (
       ((payee_email and purchase_unit["payee"]["email_address"] == payee_email) or not payee_email) and # if payee_email is declared and does match evaluate next also evaluate if is not defined and its True value is False 
