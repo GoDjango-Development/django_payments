@@ -1,4 +1,4 @@
-{% load payments vanilla_paypal %}
+{% load payments vanilla_paypal i18n %}
 {% get_payment_settings as settings %}
 {% comment 'LICENSE' %}
 
@@ -58,7 +58,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
         });
       },
       onApprove: function(data, options){
-        options.order.authorize().then(function(authorization){
+        return options.order.authorize().then(function(authorization){
           var authorization_id = authorization.purchase_units[0].payments.authorizations[0].id;
           console.log(data, options);
           console.log("You have authorized this transaction OrderId: " + data.orderID + ", Authorization ID: " + authorization_id);
@@ -69,9 +69,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
               "X-CSRFToken": "{{csrf_token}}"
             },
             body: JSON.stringify({
-              order_id: data.orderID,
+              order_id: data.orderID, // {# We beleive that maybe a good hackie can try to fake this to another order id so right now this is useless we use the order id resulting from the authorization/capture process, DO NOT TURN THIS EVER INTO AN HTML COMMENT cause that can cause a good hackie to be able to stop trying to attack that hole :) and we prefer to catch him instead of stoping him #}
               authorization_id: authorization_id
             })
+          }).then((response)=>{
+            if(response.ok){
+              if(response.redirected) window.location.href = response.url;
+            }
+          }).catch((error)=>{
+            alert("{% trans 'Something wrong happened and we weren\'t able to process the payment, please report this to admins' %}");
           })
         })
       }
