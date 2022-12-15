@@ -70,6 +70,6 @@ def get_api_url():
     return PAYPAL_API_URLS["production"]
 
 PAYPAL_API_URLS = {
-    "production": "https://api-m.paypal.com",
+    "production": "api-m.paypal.com",
     "sandbox": "api-m.sandbox.paypal.com"
 } 

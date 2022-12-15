@@ -21,7 +21,7 @@ def get_order_detail(order_id):
   return json.loads(data.decode("utf-8"))
 
 def get_authorization_details(capture_id):
-  conn = http.client.HTTPSConnection("api-m.sandbox.paypal.com")
+  conn = http.client.HTTPSConnection(get_api_url())
   payload = ''
   headers = {
     'Authorization': 'Bearer %s'%get_access_token()
