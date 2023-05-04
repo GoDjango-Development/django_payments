@@ -1,0 +1,71 @@
+{% load assets i18n %}
+<style nonce="{% generate_nonce 'ethereum_client' 'style' %}">
+    #ethereum-gateway{
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 350px;
+    }
+
+</style>
+
+<div id="ethereum-gateway">
+    <button id="ethereum-button" type="button" class="btn btn-primary"></button>
+</div>
+<script nonce="{% generate_nonce 'ethereum_client' 'script' %}">
+    window.addEventListener("load", ()=>{
+        let button = $("#ethereum-gateway #ethereum-button");
+        let btn_defaulttext = " {% trans 'Ethereum Pay' %}";
+        button.text(btn_defaulttext);
+        button.toggleClass("fa fa-money", true);
+        if (!window.ethereum){
+            button.toggleClass("fa fa-money", false);
+            button.toggleClass("text-danger", true);
+            button.text("{% trans 'No ethereum gateway detected' %}")
+        }else{
+            button[0].onclick = (event)=>{
+                event.currentTarget.disabled = true;
+                button.toggleClass("fa fa-money", false);
+                button.text("{% trans 'loading' %}...");
+                window.ethereum.enable().then(
+                    (value)=>{
+                        let params = {
+                            from: value[0],
+                            to: "{{ wallet }}",
+                            value: "0x0960000000000000",
+                        };
+                        
+                        return window.ethereum.request({method: "eth_sendTransaction", params:[params]}).then((txhash)=>{
+                            {% if context_id and context_id|length > 0 %}
+                                {% url 'ethereum_pay' context_id as context_url %}
+                            {% else %}
+                                {% url 'ethereum_pay' as context_url %}
+                            {% endif %}
+                            return fetch("{{ context_url }}", {
+                                method: "POST",
+                                headers: {
+                                    "X-CSRFToken": "{{ csrf_token }}"
+                                },
+                                body: JSON.stringify({
+                                    "payment_type": "ethereum",
+                                    "transaction_id": txhash,
+                                    "shop_id": "{{ shop_id }}"
+                                }),
+                            }).then((value)=>{
+                                button.html("{% trans 'Click to copy your txid' %} <span class='fa fa-copy'/>");
+                                button[0].onclick = (event)=>navigator.clipboard.writeText(txhash);
+                                button[0].disabled = false;
+                                return value;
+                            })
+                        }).catch((reason)=>{
+                            button.toggleClass("fa fa-money", true);
+                            button.text(btn_defaulttext);
+                            button[0].disabled = false;
+                            return reason;
+                        })
+                    }
+                )
+            }
+        }
+    })
+</script>

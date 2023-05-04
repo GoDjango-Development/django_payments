@@ -1,0 +1,20 @@
+{% extends 'admin/base.html' %}
+{% block content %}
+    <div class="col-md-12" 
+        style="display: flex; justify-content:center; align-items: center; flex-direction:column; background-color: center;
+        height: 100vh;">
+        <div class="card shadow center container col-md-4" style="padding-top: 5%;">
+            <div class="row" style="margin: 0 1.5%; justify-content: center; align-items: center;">
+                <h1 class="card-title col-md-8" style="font-weight: bold; font-size: x-large; ">{{ name }}</h1>
+                <sub class="card-subtitle col-md-4" >${{total}}</sub>
+            </div>
+            <p class="card-text" style="margin: 0 5%;">
+                {{description}}
+            </p>
+            <div class="card-body">
+                {% include 'ethereum_admin.html' %}
+                {% include 'paypal_buttons.html' with total=total auth_token=cfg.auth_token context_id="client" currency=currency %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

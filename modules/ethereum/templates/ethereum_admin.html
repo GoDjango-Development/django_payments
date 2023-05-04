@@ -1,0 +1,65 @@
+{% load i18n debug_tools urls %}
+{% pprint "Ethereum Wallet: " model.ethereum_wallet %}
+<input id="ethereum-wallet-visor"  type="text" class="vTextField text-center" placeholder="{{ model.ethereum_wallet }}"></input>
+<input id="ethereum-wallet-connect" type="button" class="btn btn-primary mt-2" value="{% trans 'Connect your wallet' %}"></input>
+
+<div class="help-block red">
+    
+</div>
+
+<div class="help-block col-12">
+    {% trans 'Your ethereum crypto wallet... ( If not supplied then crypto payments will be disabled )' %}
+</div>
+
+<div class="help-block text-red">
+    
+</div>
+<script defer>
+    var ws_socket = new WebSocket("{% url 'ws_ethereum' is_websocket=True %}");
+    ws_socket.onmessage = (event) => alert(event.data);
+
+    function commit(address){
+        ws_socket.send(JSON.stringify({
+            "ethereum_address": address,
+            "metamask_wallet": window.ethereum.isMetaMask
+        }));
+    }
+
+    window.addEventListener("load", ()=>{
+        let visor = $("#ethereum-wallet-visor");
+        let connector = $("#ethereum-wallet-connect");
+        let connector_default_click = (event)=>{
+            window.ethereum.enable().then(
+                (value)=>{
+                    if (value[0] !== visor.attr("placeholder")) commit(value[0]);
+                    visor.attr("placeholder", value[0]);
+                    connector.toggleClass("btn-success", true);
+                    connector.val("{% trans 'Wallet is connected' %}");
+                }
+            );
+        };
+        if (!window.ethereum){
+            connector.attr("type", "text");
+            connector.attr("class", "vTextField");
+            connector.attr("No ethereum gateway detected... Type directly your address");
+        }else{
+            connector[0].onclick = connector_default_click;
+        }
+        visor.on("input", (event)=>{
+            if (visor.val().length > 0){
+                connector.val("{% trans 'Apply' %}");
+                connector.toggleClass("btn-success", false);
+                connector[0].onclick = () => commit(visor.val());
+            }else {
+                if(window.ethereum?.selectedAddress){
+                    connector.toggleClass("btn-success", true);
+                    connector.val("{% trans 'Wallet is connected' %}");
+                }else{
+                    connector.val("{% trans 'Connect your wallet' %}");
+                    connector.toggleClass("btn-success", false);
+                    connector[0].onclick = connector_default_click;
+                }
+            }
+        })
+    })
+</script>

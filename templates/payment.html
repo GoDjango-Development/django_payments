@@ -1,0 +1,21 @@
+{% load i18n %}
+
+{% block content %}
+    <div class="col-md-12 d-flex justify-content-center align-items-center flex-column h-100 my-3">
+        <div class="card shadow center container col-md-4 py-5" >
+            <div class="d-flex flex-row justify-content-between align-items-center" >
+                <h1 class="card-title font-weight-bold h3">{{ name }}</h1>
+                <sub class="card-subtitle">${{total}}</sub>
+            </div>
+            <div class="card-body p-0">
+                {% if wallet and wallet|length > 0 %}
+                    {% trans 'Payment to ' as description%}
+                    {% include 'ethereum_client.html' with description=description|add:name wallet=wallet context_id=context_id shop_id=shop_id %}
+                {% endif %}
+                {% if auth_token and auth_token|length > 0 %}
+                    {% include 'paypal_buttons.html' with total=total auth_token=cfg.auth_token context_id="client" currency=currency shop_id=shop_id %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

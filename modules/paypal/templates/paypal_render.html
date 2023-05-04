@@ -1,0 +1,199 @@
+{% load payments %}
+
+<script async defer nonce="{% get_nonce %}">
+  
+  {% if data is None %}
+      // Create a client.
+      window.braintree?.client.create({
+          authorization: '{% get_auth_token auth_token %}'
+        }).then(function (clientInstance) {
+          // Create a PayPal Checkout component
+          return braintree.paypalCheckout.create({
+            client: clientInstance
+          });
+        }).then(function (paypalCheckoutInstance) {
+          return paypalCheckoutInstance.loadPayPalSDK({
+            {% if type == "subscribe" %}
+              currency: '{{ currency }}',
+              vault: true,
+              //intent: 'capture',
+              // components: "buttons",
+              //"enable-funding": "paylater,venmo",
+              //dataAttributes: {
+              //  amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", "."),
+              //}
+            {% else %}
+              currency: '{{currency}}',
+              intent: 'capture',
+              components: "buttons,messages",
+              "enable-funding": "paylater,venmo",
+              dataAttributes: {
+                amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", "."),
+              }
+            {% endif %}
+          })
+        }).then(function (paypalCheckoutInstance) {
+          return paypal.Buttons({
+            style: {
+              "color": "blue"
+            },
+            //fundingSource: paypal.FUNDING.PAYPAL,
+            {% if type == "subscribe" %}
+              createBillingAgreement: function () {
+                return paypalCheckoutInstance.createPayment({
+                  flow: 'vault', // Required
+                  // The following are optional params
+                  billingAgreementDescription: "{% get_payment_settings 'agreement' %}",
+                  enableShippingAddress: false,
+                });
+              },
+            {% else %}
+              createOrder: function () {
+                return paypalCheckoutInstance.createPayment({
+                  flow: 'checkout', // Required
+                  amount: parseFloat(document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", ".")), // Required
+                  currency: '{{currency}}',
+                  //currency: 'USD', // Required, must match the currency passed in with loadPayPalSDK
+                  requestBillingAgreement: true, // Required
+                  billingAgreementDetails: {
+                    description: "{% get_payment_settings 'agreement' %}"
+                  },
+                  intent: 'capture', // Must match the intent passed in with loadPayPalSDK
+                  enableShippingAddress: true,
+                  shippingAddressEditable: true
+                });
+              },
+            {% endif %}
+            onApprove: function (data, actions) {
+              return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+                console.log(payload);
+                // Submit `payload.nonce` to your server
+                let headers = {
+                    "X-CSRFToken": '{{csrf_token}}'
+                };
+                fetch("{% on_approve_url context_id %}", {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                    headers: headers
+                }).then((res, reject)=>{
+                    console.log(res);
+                });
+              });
+            },
+            onCancel: function (data) {
+              console.log('PayPal payment cancelled', JSON.stringify(data, 0, 2));
+            },    
+            onError: function (err) {
+              console.error('PayPal error', err);
+            }
+          }
+          ).render(
+            '#paypal-container-{{uid}}'
+          );
+        })
+        .then(function () {
+          // The PayPal button will be rendered in an html element with the ID
+          // `paypal-button`. This function will be called when the PayPal button
+          // is set up and ready to be used
+    
+        });
+{% else %}
+      {% for instance in data.values %}
+        // Create a client.
+        window.braintree?.client.create({
+            authorization: '{% get_auth_token auth_token %}'
+          }).then(function (clientInstance) {
+            // Create a PayPal Checkout component
+            return braintree.paypalCheckout.create({
+              client: clientInstance
+            });
+          }).then(function (paypalCheckoutInstance) {
+            return paypalCheckoutInstance.loadPayPalSDK({
+              {% if type == "subscribe" %}
+                currency: '{{ currency }}',
+                vault: true,
+                //intent: 'capture',
+                // components: "buttons",
+                //"enable-funding": "paylater,venmo",
+                //dataAttributes: {
+                //  amount: document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", "."),
+                //}
+              {% else %}
+                currency: '{{ currency }}',
+                intent: 'capture',
+                components: "buttons,messages",
+                "enable-funding": "paylater,venmo",
+                dataAttributes: {
+                  amount: document.getElementById("{{ instance.message_id }}").getAttribute("data-pp-amount").replace(",", "."),
+                  namespace: "{{instance.uid}}"
+                }
+              {% endif %}
+            })
+          }).then(function (paypalCheckoutInstance) {
+
+            return {{instance.uid}}.Buttons({
+              style: {
+                "color": "blue"
+              },
+              //fundingSource: paypal.FUNDING.PAYPAL,
+              {% if type == "subscribe" %}
+                createBillingAgreement: function () {
+                  return paypalCheckoutInstance.createPayment({
+                    flow: 'vault', // Required
+                    // The following are optional params
+                    billingAgreementDescription: "{% get_payment_settings 'agreement' %}",
+                    enableShippingAddress: false,
+                  });
+                },
+            {% else %}
+              createOrder: function () {
+                return paypalCheckoutInstance.createPayment({
+                  flow: 'checkout', // Required
+                  amount: parseFloat(document.getElementById("{{ instance.message_id }}").getAttribute("data-pp-amount").replace(",", ".")), // Required
+                  currency: '{{ currency }}', // Required, must match the currency passed in with loadPayPalSDK
+                  requestBillingAgreement: true, // Required
+                  billingAgreementDetails: {
+                    description: "{% get_payment_settings 'agreement' %}"
+                  },
+                  intent: 'capture', // Must match the intent passed in with loadPayPalSDK
+                  enableShippingAddress: true,
+                  shippingAddressEditable: true
+                });
+              },
+              {% endif %}
+              onApprove: function (data, actions) {
+                return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
+                  // Submit `payload.nonce` to your server
+                    let headers = {
+                        "X-CSRFToken": '{{csrf_token}}'
+                    };
+                    fetch("{% on_approve_url context_id %}", {
+                        method: "POST",
+                        body: JSON.stringify(payload),
+                        headers: headers
+                    }).then((res, reject)=>{
+                        console.log(res);
+                    });
+                });
+              },
+              onCancel: function (data) {
+                console.log('PayPal payment cancelled', JSON.stringify(data, 0, 2));
+              },    
+              onError: function (err) {
+                console.error('PayPal error', err);
+              }
+            }
+            ).render(
+              '#{{ instance.container_id }}'
+            );
+          })
+          .then(function () {
+            // The PayPal button will be rendered in an html element with the ID
+            // `paypal-button`. This function will be called when the PayPal button
+            // is set up and ready to be used
+      
+          });
+  
+      {% endfor %}
+    {% endif %}  
+</script>

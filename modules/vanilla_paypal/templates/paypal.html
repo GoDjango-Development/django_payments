@@ -1,0 +1,119 @@
+{% load payments vanilla_paypal i18n %}
+{% get_payment_settings as settings %}
+{% comment 'LICENSE' %}
+
+Copyright 2022 GoDjango LLC
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+This software was developed by GoDjango Limited Liability Company, the remote scripts used here and underlying tech belongs to 
+PayPal, what is a GoDjango creationg is the easy integration with Django.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, 
+BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
+SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+{% endcomment %}
+{% get_container_uid uid as uid %}
+
+<div id="paypal-container-{{uid}}" ></div>
+<!--
+  In your code, dynamically update data-pp-amount with
+  the price or cart amount. For example,
+  data-pp-amount="89.99" for $89.99 product
+-->
+<div id="paypal-message-{{uid}}"
+  data-pp-message
+  data-pp-layout="text"
+  data-pp-text-color="black"
+  data-pp-logo-type="inline"
+  data-pp-amount="{{ total|normalize_amount }}">
+</div>
+{% get_nonce 'paypal_environment' 'script connect style frame' as paypal_nonce %}
+
+<script {% if paypal_nonce %} nonce="{{paypal_nonce}}" {% endif %}>
+  function paypalRender(){
+    window.paypal?.Buttons({
+      createOrder: function(data, actions) {
+        // Set up the transaction
+        return actions.order.create({
+          purchase_units: [{
+            amount: {
+              value: parseFloat(document.getElementById("paypal-message-{{uid}}").getAttribute("data-pp-amount").replace(",", ".")).toFixed(2)
+            }
+          }],
+          intent: "authorize"
+        });
+      },
+      onApprove: function(data, options){
+        return options.order.authorize().then(function(authorization){
+          var authorization_id = authorization.purchase_units[0].payments.authorizations[0].id;
+          console.log(data, options);
+          console.log("You have authorized this transaction OrderId: " + data.orderID + ", Authorization ID: " + authorization_id);
+          let content = {
+              order_id: data.orderID, // {# We beleive that maybe a good hackie can try to fake this to another order id so right now this is useless we use the order id resulting from the authorization/capture process, DO NOT TURN THIS EVER INTO AN HTML COMMENT cause that can cause a good hackie to be able to stop trying to attack that hole :) and we prefer to catch him instead of stoping him #}
+              authorization_id: authorization_id,
+              data: data,
+              options: options
+            };
+          let forms = document.getElementsByClassName("paypal-form-content");
+          for(let form of forms){
+            let data = new FormData(form);
+            for(let key of data.keys()){
+              content[key] = data.get(key);
+            }
+          }
+          return fetch("{% on_approve_url context_id=context_id payment_type='vanilla_default' %}", {
+            headers: {
+              'Accept': 'application/json',
+              "Content-Type":"application/json",
+              "X-CSRFToken": "{{csrf_token}}"
+            },
+            credentials:"include",
+            method: "post",
+            body: JSON.stringify(content)
+          }).then((response)=>{
+            if(response.ok){
+              if(response.redirected) window.location.href = response.url;
+            }
+          }).catch((error)=>{
+            alert("{% trans 'Something wrong happened and we weren\'t able to process the payment, please report this to admins' %}");
+          })
+        }).catch((error)=>{
+          let errorContainerId = paypal-error-container;
+          if (document.getElementById(errorContainerId)){
+            return; // Cause we are showing the error already;
+          }
+          let span = document.createElement("span");
+          span.id = errorContainerId;
+          span.classList.toggle("alert alert-success d-flex align-items-center position-fixed")
+          span.textContent = "{% trans 'Sorry but we werent able to process your payment, dont worry you havent pay anything yet but please try to check for the reason why manually contact us if you need any help...' %}";
+          document.body.append(span);
+          let timeout = setTimeout(()=>{
+            span.remove();
+            clearTimeout(timeout);
+          }, 10000);
+        })
+      }
+    }).render('#paypal-container-{{uid}}');
+  }
+</script>
+<script async onerror="document.getElementById('paypal-container-{{uid}}').textContent = `{% trans 'Cannot successufulluy load PayPal at the moment more likely cause a location issue' %}`"
+  {% if paypal_nonce %} 
+  nonce="{{paypal_nonce}}"  
+  data-csp-nonce="{{paypal_nonce}}"
+  {% endif %}
+  data-client-token="{% get_client_token %}"
+  src="https://www.paypal.com/sdk/js?client-id={{ client_id }}&components=buttons&disable-funding=paylater&intent=authorize"
+  onload="paypalRender()"
+></script>
+
