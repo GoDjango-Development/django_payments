@@ -26,9 +26,7 @@ def get_nonce(context, nonce_name="paypal_render", nonce_types='script'):
 
 @register.filter()
 def normalize_amount(amount: float):
-  if amount:
-    return format(amount, ".2f")
-  return "0.00"
+  return format(amount, ".2f") if amount else "0.00"
 
 # 'paypal_make_payment'
 @register.simple_tag(takes_context=True)
