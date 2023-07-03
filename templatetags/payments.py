@@ -21,7 +21,7 @@ def get_nonce(context, nonce_name="paypal_render", nonce_types='script'):
   nonce = ""
   if "django_optimizer" in settings.INSTALLED_APPS and "django_optimizer.middleware.CSPMiddleware" in settings.MIDDLEWARE:
     from django_optimizer.templatetags.assets import generate_nonce
-    nonce = generate_nonce(context, nonce_name, nonce_types)
+    nonce = generate_nonce(nonce_name, nonce_types)
   return nonce
 
 @register.filter()
