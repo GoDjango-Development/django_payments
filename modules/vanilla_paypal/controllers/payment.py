@@ -63,8 +63,8 @@ def make_payment(request: HttpRequest, *args, **kwargs):
   data = json.loads(request.body)
   amount = get_plugin().get("amount", lambda request, *args, **kwargs: 0)(request, *args, **kwargs)
   if hasattr(amount, "__iter__"): # if its iterable
-    amount = amount[0]
     currency = amount[1]
+    amount = amount[0]
   else:
     currency = "USD"
   email, merchant = None, None # get_plugin_conf("context", "targets", ["email", "merchant"], default={})
