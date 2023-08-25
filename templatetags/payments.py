@@ -26,7 +26,7 @@ def get_nonce(context, nonce_name="paypal_render", nonce_types='script'):
 
 @register.filter()
 def normalize_amount(amount: float):
-  return format(amount, ".2f") if amount else "0.00"
+  return format(float(amount), ".2f") if amount else "0.00"
 
 # 'paypal_make_payment'
 @register.simple_tag(takes_context=True)
@@ -112,3 +112,7 @@ def set_val(dict_var: dict, *args, **kwargs):
 @register.filter()
 def get(dict_var: dict, key):
   return dict_var.get(key)
+
+@register.filter(name="or")
+def lor(value, default):
+  return value or default

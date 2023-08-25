@@ -63,18 +63,17 @@ def make_payment(request: HttpRequest, *args, **kwargs):
   data = json.loads(request.body)
   amount = get_plugin().get("amount", lambda request, *args, **kwargs: 0)(request, *args, **kwargs)
   if hasattr(amount, "__iter__"): # if its iterable
-    amount = amount[0]
     currency = amount[1]
+    amount = amount[0]
   else:
     currency = "USD"
-  
   email, merchant = None, None # get_plugin_conf("context", "targets", ["email", "merchant"], default={})
   wrapper = Wrapper()
   signal_named = {
     "order_id": None,
     "authorization_id": data.get("authorization_id"),
     "request": request,
-    "args": args, 
+    "args": args,
     "kwargs": kwargs,
     "amount": amount,
     "currency": currency,
@@ -109,6 +108,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
     )
     res = conn.getresponse()
     data = json.loads(res.read().decode("utf-8")) # this overrides current data and now when ensuring payment we are ensuring with the real order id associated to the autorization id
+    print("DEBUGGING: RES %s %s"%(data, res.status))
     order_id = get_authorization_details(data.get("id")).get("supplementary_data", {}).get("related_ids", {}).get("order_id")
     wrapper.anon_push(HttpResponse(status=res.status))
     signal_named = {
