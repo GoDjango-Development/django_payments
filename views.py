@@ -18,7 +18,7 @@ def require_view_payed(func, amount=0, *args, **kwargs):
             enough to bypass this protection
     """
     def wrapped_function(request, *args, **kwargs):
-        print(request, args, kwargs) # TODO Implements this to protect function to be payed before executing them
+        # TODO Implements this to protect function to be payed before executing them
         return func(request, *args, **kwargs)
     return wrapped_function
 

@@ -23,7 +23,6 @@ from payments.modules.vanilla_paypal.signals import (
 def _payment_accepted_stalker():
     def inform_global(*args, **kwargs): # informs global signal of children signal is received
         del kwargs["signal"] # strip out previous signal 
-        #print("inform payment")
         payment_accepted.send(*args, **kwargs)
     eth_pay_accepted.connect(inform_global)
     paypal_pay_accepted.connect(inform_global)
