@@ -1,3 +1,4 @@
+from logging import info
 from django.conf import settings
 from django.http.request import HttpRequest
 from django.http.response import HttpResponse, HttpResponseRedirect, HttpResponseNotModified
@@ -108,7 +109,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
     )
     res = conn.getresponse()
     data = json.loads(res.read().decode("utf-8")) # this overrides current data and now when ensuring payment we are ensuring with the real order id associated to the autorization id
-    print("DEBUGGING: RES %s %s"%(data, res.status))
+    info("RES %s %s"%(data, res.status))
     order_id = get_authorization_details(data.get("id")).get("supplementary_data", {}).get("related_ids", {}).get("order_id")
     wrapper.anon_push(HttpResponse(status=res.status))
     signal_named = {
