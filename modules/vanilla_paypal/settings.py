@@ -25,7 +25,6 @@ def get_access_token():
     info("Obtained client id and Client Secret")
     return _get_access_token(client_id, client_secret)
 
-@lru_cache
 def _get_access_token(client_id, client_secret):
     """
         Generates the access token to communicate with the API, the generated Access Token will be then cached and reused without
@@ -36,7 +35,7 @@ def _get_access_token(client_id, client_secret):
         raise ImproperlyConfigured("Vanilla PayPal requires both client id and client secret but seems like one of those are missing")
 
     base_auth = base64.b64encode(f"{client_id}:{client_secret}".encode("utf-8")).decode("ascii")
-
+    info("BASE_AUTH: %s"%base_auth)
     resp = requests.post(get_api_url()+"/v1/oauth2/token", data={
             'grant_type':'client_credentials',
             'ignoreCache':'true',
@@ -49,9 +48,11 @@ def _get_access_token(client_id, client_secret):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
     )
-    
-    return resp.json().get("access_token")
-
+    info("Response Data: %s"%(resp.status_code, resp.content))
+    access_token = resp.json().get("access_token")
+    if not access_token:
+        info(f"No access token? ERROR: {access_token}")
+    return access_token
 def get_client_token():
     resp = requests.post(get_api_url()+"/v1/identity/generate-token", data={
         "customer_id": "%s"%(time.time_ns())
