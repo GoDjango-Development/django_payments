@@ -70,8 +70,8 @@ def get_uuid(*cacheable_args):
 @lru_cache
 def get_api_url():
     if settings.DEBUG and not get_plugin().get("enforce_production", False):
-        return PAYPAL_API_URLS["sandbox"]
-    return PAYPAL_API_URLS["production"]
+        return "https://%s"%PAYPAL_API_URLS["sandbox"]
+    return "https://%s"%PAYPAL_API_URLS["production"]
 
 PAYPAL_API_URLS = {
     "production": "api-m.paypal.com",
