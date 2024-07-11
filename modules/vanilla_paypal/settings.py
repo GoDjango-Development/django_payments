@@ -38,10 +38,10 @@ def _get_access_token(client_id, client_secret):
     info("BASE_AUTH: %s"%base_auth)
     resp = requests.post(get_api_url()+"/v1/oauth2/token", data={
             'grant_type':'client_credentials',
-            'ignoreCache':'true',
-            'return_authn_schemes':'true',
-            'return_client_metadata':'true',
-            'return_unconsented_scopes':'true'
+            # 'ignoreCache':'true',
+            # 'return_authn_schemes':'true',
+            # 'return_client_metadata':'true',
+            # 'return_unconsented_scopes':'true'
         },
         headers = {
             'Authorization': f'Basic {base_auth}',
