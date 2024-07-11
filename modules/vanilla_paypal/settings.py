@@ -36,8 +36,9 @@ def _get_access_token(client_id, client_secret):
 
     base_auth = base64.b64encode(f"{client_id}:{client_secret}".encode("utf-8")).decode("ascii")
     info("BASE_AUTH: %s"%base_auth)
-    resp = requests.post(get_api_url()+"/v1/oauth2/token", data={
-            'grant_type':'client_credentials',
+    resp = requests.post(
+        get_api_url()+"/v1/oauth2/token", 
+        data={'grant_type':'client_credentials',
             # 'ignoreCache':'true',
             # 'return_authn_schemes':'true',
             # 'return_client_metadata':'true',
@@ -48,19 +49,20 @@ def _get_access_token(client_id, client_secret):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
     )
-    info("Response Data: %s %s"%(resp.status_code, resp.content))
-    access_token = resp.json().get("access_token")
+    data = resp.json()
+    info("Response Data: %s %s"%(resp.status_code, data))
+    access_token = data.get("access_token")
     if not access_token:
         info(f"No access token? ERROR: {access_token}")
     return access_token
 def get_client_token():
-    resp = requests.post(get_api_url()+"/v1/identity/generate-token", data={
-        "customer_id": "%s"%(time.time_ns())
-    },
-    headers={
-        'Authorization': 'Bearer %s'%(get_access_token()),
-        'Content-Type': 'application/json'
-    }
+    resp = requests.post(
+        get_api_url()+"/v1/identity/generate-token", 
+        data={"customer_id": "%s"%(time.time_ns())},
+        headers={
+            'Authorization': 'Bearer %s'%(get_access_token()),
+            'Content-Type': 'application/json'
+        }
     )
     return resp.json().get("client_token")
 
