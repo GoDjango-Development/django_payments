@@ -1,35 +1,24 @@
 from logging import error, info
-from django.conf import settings
 from django.http.request import HttpRequest
-from django.http.response import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http.response import HttpResponse, JsonResponse
 from payments.modules.vanilla_paypal.signals import *
-from payments.settings import get_plugin_conf, get_plugin
-from payments.modules.vanilla_paypal.models.plan import Plan
+from payments.settings import get_plugin
 from payments.modules.vanilla_paypal.settings import get_api_url, get_access_token, get_uuid
 from django_plugins.utils import Wrapper
-import http.client, json, uuid
+import json
+import requests
 
 def get_order_detail(order_id):
-  conn = http.client.HTTPSConnection(get_api_url())
-  payload = ''
-  headers = {
+  res = requests.get(get_api_url()+"/v2/checkout/orders/%s"%order_id, headers={
     'Authorization': 'Bearer %s'%get_access_token()
-  }
-  conn.request("GET", "/v2/checkout/orders/%s"%order_id, payload, headers)
-  res = conn.getresponse()
-  data = res.read()
-  return json.loads(data.decode("utf-8"))
+  })
+  return res.json()
 
 def get_authorization_details(capture_id):
-  conn = http.client.HTTPSConnection(get_api_url())
-  payload = ''
-  headers = {
+  resp = requests.get(get_api_url()+"/v2/payments/captures/%s"%capture_id, headers={
     'Authorization': 'Bearer %s'%get_access_token()
-  }
-  conn.request("GET", "/v2/payments/captures/%s"%capture_id, payload, headers)
-  res = conn.getresponse()
-  data = json.loads(res.read().decode("utf-8"))
-  return data
+  })
+  return resp.json()
 
 
 def ensure_payment_to(order_id, payee_email=None, merchant_id=None, only_once=False):
@@ -85,34 +74,31 @@ def make_payment(request: HttpRequest, *args, **kwargs):
   }
   # Start critical zone
   try:
-    conn = http.client.HTTPSConnection(get_api_url())
-    payload = json.dumps({
-      "amount": {
-        "value": amount,
-        "currency_code": currency
+    resp = requests.post(
+      get_api_url()+"/v2/payments/authorizations/%s/capture"%(data.get("authorization_id")), 
+      data={
+        "amount": {
+          "value": amount,
+          "currency_code": currency
+        },
+        "final_capture": True,
+        # below can be understand like Ice Box possible feature, if this module becomes popular or we do need this at some point we will add the features
+        # "invoice_id": "1670017495",
+        # "note_to_payer": "If the ordered color is not available, we will substitute with a different color free of charge.",
+        # "soft_descriptor": "Bob's Custom Sweaters"
       },
-      "final_capture": True,
-      # below can be understand like Ice Box possible feature, if this module becomes popular or we do need this at some point we will add the features
-      # "invoice_id": "1670017495",
-      # "note_to_payer": "If the ordered color is not available, we will substitute with a different color free of charge.",
-      # "soft_descriptor": "Bob's Custom Sweaters"
-    })
-    headers = {
-      'Content-Type': 'application/json',
-      'PayPal-Request-Id': '%s'%get_uuid(request.session.session_key), # gets a different uuid for each session, this fields allows paypal not to recompute twice the same request, read more here https://developer.paypal.com/reference/guidelines/idempotency/ 
-      'Prefer': 'return=representation',
-      'Authorization': 'Bearer %s'%get_access_token() # gets the access token to communicate with API 
-    }
-    conn.request("POST", "/v2/payments/authorizations/%s/capture"%(data.get("authorization_id")), 
-      payload, 
-      headers
+      headers = {
+        'Content-Type': 'application/json',
+        'PayPal-Request-Id': '%s'%get_uuid(request.session.session_key), # gets a different uuid for each session, this fields allows paypal not to recompute twice the same request, read more here https://developer.paypal.com/reference/guidelines/idempotency/ 
+        'Prefer': 'return=representation',
+        'Authorization': 'Bearer %s'%get_access_token() # gets the access token to communicate with API 
+      }
     )
-    res = conn.getresponse()
-    data = json.loads(res.read().decode("utf-8")) # this overrides current data and now when ensuring payment we are ensuring with the real order id associated to the autorization id
-    info("RES %s %s"%(data, res.status))
+    data = resp.json()
+    info("RES %s %s"%(resp.status_code))
     info("So far so god, now we should already have captured the authorization from the client.")
     order_id = get_authorization_details(data.get("id")).get("supplementary_data", {}).get("related_ids", {}).get("order_id")
-    wrapper.anon_push(HttpResponse(status=res.status))
+    wrapper.anon_push(HttpResponse(status=resp.status_code))
     signal_named = {
       "order_id": order_id,
       "authorization_id": data.get("authorization_id"),
@@ -126,7 +112,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
       "paypal_response": data,
       "response": wrapper # allows to be modified inside the connected signals
     }
-    if (200 <= res.status < 300 and
+    if (resp.ok and
       ensure_payment_to(order_id, payee_email=email, merchant_id=merchant)
     ):
       if data.get("status", None) == "COMPLETED":
@@ -134,7 +120,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
         return wrapper.reference_stack["anonymous"][0]
   except Exception as ex:
     error(ex)
-    wrapper.anon_push(JsonResponse(status=res.status, content=data))
+    wrapper.anon_push(JsonResponse(status=500, content=data))
   payment_rejected.send(make_payment, **signal_named)
   return wrapper.reference_stack["anonymous"][0]
 
