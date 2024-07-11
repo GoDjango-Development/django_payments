@@ -53,7 +53,7 @@ def _get_access_token(client_id, client_secret):
         if resp.ok:
             break
         else:
-            info(resp.status_code, resp.content)
+            info(f"Retry:{retry} Status Code: {resp.status_code} Content: {resp.content}")
             time.sleep(3)
     else:
         raise ValueError("Couldnt retrieve the access_token due to an unkown reason")
