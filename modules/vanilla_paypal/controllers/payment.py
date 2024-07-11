@@ -1,7 +1,7 @@
-from logging import info
+from logging import error, info
 from django.conf import settings
 from django.http.request import HttpRequest
-from django.http.response import HttpResponse, HttpResponseRedirect, HttpResponseNotModified
+from django.http.response import HttpResponse, HttpResponseRedirect, JsonResponse
 from payments.modules.vanilla_paypal.signals import *
 from payments.settings import get_plugin_conf, get_plugin
 from payments.modules.vanilla_paypal.models.plan import Plan
@@ -132,8 +132,9 @@ def make_payment(request: HttpRequest, *args, **kwargs):
       if data.get("status", None) == "COMPLETED":
         payment_accepted.send(make_payment, **signal_named)
         return wrapper.reference_stack["anonymous"][0]
-  except:
-    pass # Ignore errors and instead call later to rejection logic 
+  except Exception as ex:
+    error(ex)
+    wrapper.anon_push(JsonResponse(status=res.status, content=data))
   payment_rejected.send(make_payment, **signal_named)
   return wrapper.reference_stack["anonymous"][0]
 
