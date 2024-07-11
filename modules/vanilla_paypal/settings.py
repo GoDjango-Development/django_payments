@@ -36,19 +36,27 @@ def _get_access_token(client_id, client_secret):
 
     base_auth = base64.b64encode(f"{client_id}:{client_secret}".encode("utf-8")).decode("ascii")
     info("BASE_AUTH: %s"%base_auth)
-    resp = requests.post(
-        get_api_url()+"/v1/oauth2/token", 
-        data={'grant_type':'client_credentials',
-            # 'ignoreCache':'true',
-            # 'return_authn_schemes':'true',
-            # 'return_client_metadata':'true',
-            # 'return_unconsented_scopes':'true'
-        },
-        headers = {
-            'Authorization': f'Basic {base_auth}',
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-    )
+    for retry in range(5):
+        resp = requests.post(
+            get_api_url()+"/v1/oauth2/token", 
+            data={'grant_type':'client_credentials',
+                # 'ignoreCache':'true',
+                # 'return_authn_schemes':'true',
+                # 'return_client_metadata':'true',
+                # 'return_unconsented_scopes':'true'
+            },
+            headers = {
+                'Authorization': f'Basic {base_auth}',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        )
+        if resp.ok:
+            break
+        else:
+            info(resp.status_code, resp.content)
+            time.sleep(3)
+    else:
+        raise ValueError("Couldnt retrieve the access_token due to an unkown reason")
     data = resp.json()
     info("Response Data: %s %s"%(resp.status_code, data))
     access_token = data.get("access_token")
