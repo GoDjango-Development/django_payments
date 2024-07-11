@@ -21,7 +21,7 @@ def get_order_detail(order_id):
   return json.loads(data.decode("utf-8"))
 
 def get_authorization_details(capture_id):
-  conn = http.client.HTTPSConnection("api-m.sandbox.paypal.com")
+  conn = http.client.HTTPSConnection(get_api_url())
   payload = ''
   headers = {
     'Authorization': 'Bearer %s'%get_access_token()
@@ -110,6 +110,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
     res = conn.getresponse()
     data = json.loads(res.read().decode("utf-8")) # this overrides current data and now when ensuring payment we are ensuring with the real order id associated to the autorization id
     info("RES %s %s"%(data, res.status))
+    info("So far so god, now we should already have captured the authorization from the client.")
     order_id = get_authorization_details(data.get("id")).get("supplementary_data", {}).get("related_ids", {}).get("order_id")
     wrapper.anon_push(HttpResponse(status=res.status))
     signal_named = {
