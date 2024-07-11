@@ -120,7 +120,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
         return wrapper.reference_stack["anonymous"][0]
   except Exception as ex:
     error(ex)
-    wrapper.anon_push(JsonResponse(status=500, content=data))
+    wrapper.anon_push(JsonResponse(status=500, data=data))
   payment_rejected.send(make_payment, **signal_named)
   return wrapper.reference_stack["anonymous"][0]
 
