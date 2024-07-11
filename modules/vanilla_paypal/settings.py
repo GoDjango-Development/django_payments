@@ -68,7 +68,6 @@ def get_client_token():
 def get_uuid(*cacheable_args):
     return uuid4()
 
-@lru_cache
 def get_api_url():
     if settings.DEBUG and not get_plugin().get("enforce_production", False):
         return "https://%s"%PAYPAL_API_URLS["sandbox"]
