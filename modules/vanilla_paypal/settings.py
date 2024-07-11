@@ -48,7 +48,7 @@ def _get_access_token(client_id, client_secret):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
     )
-    info("Response Data: %s"%(resp.status_code, resp.content))
+    info("Response Data: %s %s"%(resp.status_code, resp.content))
     access_token = resp.json().get("access_token")
     if not access_token:
         info(f"No access token? ERROR: {access_token}")
