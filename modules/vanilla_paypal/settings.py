@@ -45,7 +45,7 @@ def _get_access_token(client_id, client_secret):
         'Content-Type': 'application/x-www-form-urlencoded'
     }
     for retry in range(5):
-        info(f"Post to {get_api_url('/v1/oauth2/token')} with payload {payload} and headers {headers}")
+        info(f"Post to {url} with payload {payload} and headers {headers}")
         resp = requests.post(
             url=url,
             data=payload,
@@ -66,16 +66,23 @@ def _get_access_token(client_id, client_secret):
     if not access_token:
         info(f"No access token? ERROR: {access_token}")
     return access_token
+
 def get_client_token():
+    url = get_api_url("/v1/identity/generate-token")
+    payload = {"customer_id": "%s"%(time.time_ns())}
+    headers = {
+        'Authorization': 'Bearer %s'%(get_access_token()),
+        'Content-Type': 'application/json'
+    }
+    info(f"Post to {url} with payload {payload} and headers {headers}")
     resp = requests.post(
-        get_api_url()+"/v1/identity/generate-token", 
-        data={"customer_id": "%s"%(time.time_ns())},
-        headers={
-            'Authorization': 'Bearer %s'%(get_access_token()),
-            'Content-Type': 'application/json'
-        }
+        url=url, 
+        data=payload,
+        headers=headers
     )
-    return resp.json().get("client_token")
+    data = resp.json()
+    info(data)
+    return data.get("client_token")
 
 @lru_cache(1024)
 def get_uuid(*cacheable_args):
