@@ -77,7 +77,7 @@ def get_client_token():
     info(f"Post to {url} with payload {payload} and headers {headers}")
     resp = requests.post(
         url=url, 
-        data=payload,
+        json=payload,
         headers=headers
     )
     data = resp.json()
