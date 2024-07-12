@@ -95,7 +95,7 @@ def make_payment(request: HttpRequest, *args, **kwargs):
       }
     )
     data = resp.json()
-    info("RES %s %s"%(resp.status_code))
+    info("RES %s %s"%(resp.status_code, data))
     info("So far so god, now we should already have captured the authorization from the client.")
     order_id = get_authorization_details(data.get("id")).get("supplementary_data", {}).get("related_ids", {}).get("order_id")
     wrapper.anon_push(HttpResponse(status=resp.status_code))
