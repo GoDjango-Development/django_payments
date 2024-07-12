@@ -39,7 +39,7 @@ def _get_access_token(client_id, client_secret):
     info("BASE_AUTH: %s"%base_auth)
     url = get_api_url("/v1/oauth2/token"), 
     resp = None
-    payload = "grant_type=client_credentials&ignoreCache=true&return_authn_schemes=true&return_client_metadata=true&return_unconsented_scopes=true",
+    payload = "grant_type=client_credentials&ignoreCache=true&return_authn_schemes=true&return_client_metadata=true&return_unconsented_scopes=true"
     headers = {
         'Authorization': f'Basic {base_auth}',
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -82,7 +82,7 @@ def get_uuid(*cacheable_args):
     return uuid4()
 
 def get_api_url(apprend_url:str|None=None):
-    if settings.DEBUG and not get_plugin().get("enforce_production", False):
+    if (settings.DEBUG and not get_plugin().get("enforce_production", False)) or get_plugin().get("use_sandbox", lambda:False)():
         return "https://%s%s"%(PAYPAL_API_URLS["sandbox"], apprend_url or "")
     return "https://%s%s"%(PAYPAL_API_URLS["production"], apprend_url or "")
 
