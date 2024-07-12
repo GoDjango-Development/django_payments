@@ -9,13 +9,13 @@ import json
 import requests
 
 def get_order_detail(order_id):
-  res = requests.get(get_api_url()+"/v2/checkout/orders/%s"%order_id, headers={
+  res = requests.get(get_api_url("/v2/checkout/orders/%s"%order_id), headers={
     'Authorization': 'Bearer %s'%get_access_token()
   })
   return res.json()
 
 def get_authorization_details(capture_id):
-  resp = requests.get(get_api_url()+"/v2/payments/captures/%s"%capture_id, headers={
+  resp = requests.get(get_api_url("/v2/payments/captures/%s"%capture_id), headers={
     'Authorization': 'Bearer %s'%get_access_token()
   })
   return resp.json()
