@@ -37,7 +37,7 @@ def _get_access_token(client_id, client_secret):
 
     base_auth = base64.b64encode(f"{client_id}:{client_secret}".encode("utf-8")).decode("ascii")
     info("BASE_AUTH: %s"%base_auth)
-    url = get_api_url("/v1/oauth2/token"), 
+    url = get_api_url("/v1/oauth2/token")
     resp = None
     payload = "grant_type=client_credentials&ignoreCache=true&return_authn_schemes=true&return_client_metadata=true&return_unconsented_scopes=true"
     headers = {
