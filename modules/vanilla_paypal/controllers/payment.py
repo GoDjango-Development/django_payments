@@ -75,8 +75,8 @@ def make_payment(request: HttpRequest, *args, **kwargs):
   # Start critical zone
   try:
     resp = requests.post(
-      get_api_url()+"/v2/payments/authorizations/%s/capture"%(data.get("authorization_id")), 
-      data={
+      get_api_url("/v2/payments/authorizations/%s/capture"%(data.get("authorization_id"))), 
+      json={
         "amount": {
           "value": amount,
           "currency_code": currency
