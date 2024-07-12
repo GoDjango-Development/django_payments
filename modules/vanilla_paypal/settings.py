@@ -22,6 +22,7 @@ def get_access_token():
     info("Trying to obtain the Access Token")
     client_id = autoresolve(get_plugin().get("client_id", None))
     client_secret = autoresolve(get_plugin().get("client_secret", None))
+    info(f"{client_id} {client_secret}")
     info("Obtained client id and Client Secret")
     return _get_access_token(client_id, client_secret)
 
