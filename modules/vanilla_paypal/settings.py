@@ -38,8 +38,9 @@ def _get_access_token(client_id, client_secret):
     base_auth = base64.b64encode(f"{client_id}:{client_secret}".encode("utf-8")).decode("ascii")
     info("BASE_AUTH: %s"%base_auth)
     for retry in range(5):
+        info(f"Post to {get_api_url('/v1/oauth2/token')}")
         resp = requests.post(
-            get_api_url()+"/v1/oauth2/token", 
+            get_api_url("/v1/oauth2/token"), 
             data="grant_type=client_credentials&ignoreCache=true&return_authn_schemes=true&return_client_metadata=true&return_unconsented_scopes=true",
             headers = {
                 'Authorization': f'Basic {base_auth}',
@@ -74,10 +75,10 @@ def get_client_token():
 def get_uuid(*cacheable_args):
     return uuid4()
 
-def get_api_url():
+def get_api_url(apprend_url:str|None=None):
     if settings.DEBUG and not get_plugin().get("enforce_production", False):
-        return "https://%s"%PAYPAL_API_URLS["sandbox"]
-    return "https://%s"%PAYPAL_API_URLS["production"]
+        return "https://%s%s"%(PAYPAL_API_URLS["sandbox"], apprend_url or "")
+    return "https://%s%s"%(PAYPAL_API_URLS["production"], apprend_url or "")
 
 PAYPAL_API_URLS = {
     "production": "api-m.paypal.com",
